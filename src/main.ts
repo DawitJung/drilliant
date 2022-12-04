@@ -1,16 +1,20 @@
 import YouTubePlayer from "youtube-player";
 
-const videoId = new URL(location.href).searchParams.get("v");
-
+const videoId = new URL(location.href).searchParams.get("v")!;
 const player = YouTubePlayer("player");
-
 player.loadVideoById(videoId);
 
 const startButton = document.getElementById("start-button")!;
 const endButton = document.getElementById("end-button")!;
 const resetButton = document.getElementById("reset-button")!;
 const clearSelectButton = document.getElementById("clear-select-button")!;
+const saveButton = document.getElementById("save-button")!;
 const loopListElem = document.getElementById("loop-list")!;
+
+if (!window.localStorage) {
+  alert("Local save is not available in this browser.");
+  saveButton.style.display = "none";
+}
 
 type loop = { id: number; range: [number, number]; name: string };
 
@@ -51,6 +55,13 @@ resetButton.addEventListener("click", () => {
 clearSelectButton.addEventListener("click", () => {
   selectedLoopId = null;
   updateMark();
+});
+
+saveButton.addEventListener("click", () => {
+  const loopName = prompt("Please name these loops.");
+  if (typeof loopName === "string" && loopName.length > 0) {
+    window.localStorage.setItem(videoId, JSON.stringify({ loopName, loops }));
+  }
 });
 
 function updateButtons() {
@@ -97,7 +108,7 @@ function updateLoopListElem() {
     });
     renameButton.addEventListener("click", (event) => {
       event.stopPropagation();
-      const newName = prompt("New name?");
+      const newName = prompt("Please name this loop.");
       if (typeof newName === "string" && newName.length > 0) {
         loop.name = newName;
         updateLoopListElem();
