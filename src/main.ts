@@ -49,7 +49,7 @@ endButton.addEventListener("click", async () => {
     updateLoopListElem();
     save();
   } else {
-    alert("The end time of the loop is earlier than the start time.");
+    alert("The end time is earlier than the start time.");
   }
 });
 
@@ -84,15 +84,60 @@ function updateLoopListElem() {
       range: [start, end],
     } = loop;
     const li = document.createElement("li");
-    const text = document.createElement("div");
-    text.innerHTML = `${name} <small>${toTimeStr(start)} ~ ${toTimeStr(
-      end
-    )}</small>`;
+    const textEl = document.createElement("div");
+    const smallEl = document.createElement("small");
+    const startEl = document.createElement("u");
+    const startTimeStr = toTimeStr(start);
+    startEl.innerText = startTimeStr;
+    startEl.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const newStartTimeStr = prompt(
+        "Please enter the start time.",
+        startTimeStr
+      );
+      try {
+        const seconds = toSeconds(newStartTimeStr);
+        if (seconds < 0 || seconds > end) {
+          alert("The start time is later than the end time.");
+        } else {
+          loop.range[0] = seconds;
+          updateLoopListElem();
+          save();
+        }
+      } catch (error) {
+        if (error instanceof SyntaxError) {
+          alert("Your input is not valid.");
+        }
+      }
+    });
+    const endTimeStr = toTimeStr(end);
+    const endEl = document.createElement("u");
+    endEl.innerText = endTimeStr;
+    endEl.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const newEndTimeStr = prompt("Please enter the end time.", endTimeStr);
+      try {
+        const seconds = toSeconds(newEndTimeStr);
+        if (seconds < 0 || seconds < start) {
+          alert("The end time is earlier than the start time.");
+        } else {
+          loop.range[1] = seconds;
+          updateLoopListElem();
+          save();
+        }
+      } catch (error) {
+        if (error instanceof SyntaxError) {
+          alert("Your input is not valid.");
+        }
+      }
+    });
+    smallEl.append(startEl, " ~ ", endEl);
+    textEl.append(name, " ", smallEl);
     const renameButton = document.createElement("button");
-    renameButton.innerText = "rename";
+    renameButton.innerText = "Rename";
     const deleteButton = document.createElement("button");
     deleteButton.innerText = "Delete";
-    li.append(text, renameButton, deleteButton);
+    li.append(textEl, renameButton, deleteButton);
     li.addEventListener("click", () => {
       selectedLoopId = selectedLoopId === id ? null : id;
       updateMark();
@@ -104,6 +149,7 @@ function updateLoopListElem() {
         selectedLoopId = null;
       }
       updateLoopListElem();
+      save();
     });
     renameButton.addEventListener("click", (event) => {
       event.stopPropagation();
@@ -111,6 +157,7 @@ function updateLoopListElem() {
       if (typeof newName === "string" && newName.length > 0) {
         loop.name = newName;
         updateLoopListElem();
+        save();
       } else {
         alert("Your input is not valid.");
       }
@@ -125,14 +172,32 @@ function updateLoopListElem() {
   function toTimeStr(time) {
     let timeArr: string[] = [];
     if (time > 3600) {
-      timeArr.push((time / 3600).toFixed());
+      timeArr.push(Math.floor(time / 3600).toFixed());
     }
     if (time > 60) {
       const secondsInHour = time % 3600;
-      timeArr.push((secondsInHour / 60).toFixed());
+      timeArr.push(Math.floor(secondsInHour / 60).toFixed());
     }
     timeArr.push((time % 60).toFixed(2));
     return timeArr.join(":");
+  }
+  function toSeconds(timeStr) {
+    const times = timeStr.split(":").map((timeEl) => Number(timeEl));
+    if (
+      times.length < 1 ||
+      times.length > 3 ||
+      times.some((timeEl) => Number.isNaN(timeEl))
+    ) {
+      throw new SyntaxError();
+    }
+    let seconds = times.pop();
+    if (times.length > 0) {
+      seconds += times.pop() * 60;
+    }
+    if (times.length > 0) {
+      seconds += times.pop() * 3600;
+    }
+    return seconds;
   }
 }
 
@@ -150,7 +215,11 @@ function updateMark() {
 }
 
 function save() {
-  window.localStorage.setItem(videoId, JSON.stringify(loops));
+  if (loops.length > 0) {
+    window.localStorage.setItem(videoId, JSON.stringify(loops));
+  } else {
+    window.localStorage.removeItem(videoId);
+  }
 }
 
 setInterval(async () => {
