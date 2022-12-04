@@ -8,13 +8,7 @@ const startButton = document.getElementById("start-button")!;
 const endButton = document.getElementById("end-button")!;
 const resetButton = document.getElementById("reset-button")!;
 const clearSelectButton = document.getElementById("clear-select-button")!;
-const saveButton = document.getElementById("save-button")!;
 const loopListElem = document.getElementById("loop-list")!;
-
-if (!window.localStorage) {
-  alert("Local save is not available in this browser.");
-  saveButton.style.display = "none";
-}
 
 type loop = { id: number; range: [number, number]; name: string };
 
@@ -22,6 +16,17 @@ let loops: loop[] = [];
 let selectedLoopId: null | number = null;
 let newLoopStart: null | number = null;
 
+if (window.localStorage) {
+  const savedLoops = localStorage.getItem(videoId);
+  if (savedLoops) {
+    loops = JSON.parse(savedLoops);
+    selectedLoopId = loops[0].id;
+  }
+} else {
+  alert("Local save is not available in this browser.");
+}
+
+updateLoopListElem();
 updateButtons();
 
 startButton.addEventListener("click", async () => {
@@ -42,6 +47,7 @@ endButton.addEventListener("click", async () => {
     newLoopStart = null;
     updateButtons();
     updateLoopListElem();
+    save();
   } else {
     alert("The end time of the loop is earlier than the start time.");
   }
@@ -55,13 +61,6 @@ resetButton.addEventListener("click", () => {
 clearSelectButton.addEventListener("click", () => {
   selectedLoopId = null;
   updateMark();
-});
-
-saveButton.addEventListener("click", () => {
-  const loopName = prompt("Please name these loops.");
-  if (typeof loopName === "string" && loopName.length > 0) {
-    window.localStorage.setItem(videoId, JSON.stringify({ loopName, loops }));
-  }
 });
 
 function updateButtons() {
@@ -95,7 +94,7 @@ function updateLoopListElem() {
     deleteButton.innerText = "Delete";
     li.append(text, renameButton, deleteButton);
     li.addEventListener("click", () => {
-      selectedLoopId = id;
+      selectedLoopId = selectedLoopId === id ? null : id;
       updateMark();
     });
     deleteButton.addEventListener("click", (event) => {
@@ -148,6 +147,10 @@ function updateMark() {
   if (selectedLoopIndex > -1) {
     loopListElem.children[selectedLoopIndex].id = "selected-loop";
   }
+}
+
+function save() {
+  window.localStorage.setItem(videoId, JSON.stringify(loops));
 }
 
 setInterval(async () => {
