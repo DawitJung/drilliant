@@ -1,6 +1,6 @@
 import YouTubePlayer from "youtube-player";
 
-const videoId = new URL(location.href).searchParams.get("v")!;
+const videoId = new URL(location.href).searchParams.get("v") ?? "dQw4w9WgXcQ";
 const player = YouTubePlayer("player");
 player.loadVideoById(videoId);
 
